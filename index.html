@@ -378,8 +378,9 @@
         const file = e.dataTransfer?.files?.[0]
         if (file) handleFile(file)
       })
-      aboutBtn.onclick = async function () {
-        alert(`Rorden & Karnath (2010) A simple measure of neglect severity. PMID: 20433859`)
+      aboutBtn.onclick = function () {
+        const url = "https://github.com/rordenlab/CancelForWeb"
+        window.open(url, "_blank")
       }
       bmp.addEventListener('mousedown', (e) => {
         if (!iniData.Check) return
