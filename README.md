@@ -4,8 +4,9 @@ Spatial neglect is a common impairment seen after right-hemisphere injury. This 
 
 # Usage
 
- - Open the web page and select the desired test (e.g. bells or letters) from the first pulldown-menu. At this stage, you can demonstrate the task, illustrating the targets. Next, choose the `Mode: test` from the pull down menu. At this stage, the task is to click on all the targets on the screen. Once all targets have been found, press the hamburger icon (`☰`) to return to the `Mode: describe`. You will be asked to save the test. Note that the status bar at the bottom will provide a few measures, including the `CoC` (Center of Cancellation).
+ - Open the web page [https://rordenlab.github.io/CancelForWeb/](https://rordenlab.github.io/CancelForWeb/) and select the desired test (e.g. bells or letters) from the first pulldown-menu. At this stage, you can demonstrate the task, illustrating the targets. Next, choose the `Mode: test` from the pull down menu. At this stage, the task is to click on all the targets on the screen. Once all targets have been found, press the hamburger icon (`☰`) to return to the `Mode: describe`. You will be asked to save the test. Note that the status bar at the bottom will provide a few measures, including the `CoC` (Center of Cancellation).
  - The data files generated log not only which targets have been found, but also the order and timing of the search, which can provide [useful parameters for understanding neglect](https://pubmed.ncbi.nlm.nih.gov/25381020/).
+ - Note that you can also use these web pages to transcribe paper-and-pencil tests, but the order and timing information will not be meaningful.
  
  # Development
 
