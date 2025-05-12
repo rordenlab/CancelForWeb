@@ -25,6 +25,6 @@ The file format used is the archaic Windows text .INI format used for legacy ini
 
  - Binder et al. ([1992](https://pubmed.ncbi.nlm.nih.gov/1444886/)) described the CoC measure.
  - Rorden et al. ([2010](https://pubmed.ncbi.nlm.nih.gov/20433859/)) provide desktop tools for assessing neglect.
- - Dalmaijer et al. ([2015 ](https://pubmed.ncbi.nlm.nih.gov/25381020/)) provide Python tools for cancellation measures.
+ - Dalmaijer et al. ([2015 ](https://pubmed.ncbi.nlm.nih.gov/25381020/)) provide [open source Python tools](https://github.com/esdalmaijer/CancellationTools) for cancellation measures.
  - Röhrig et al. ([2025](https://pubmed.ncbi.nlm.nih.gov/39944743/)) describe how the center of cancellation can be used to predict outcome, aided by a [web page](https://niivue.github.io/niivue-neglect/).
  - Rosenzopf et al. [2022](https://pubmed.ncbi.nlm.nih.gov/36303420/) note that CoC is relatively robust for format and size, which is useful for a web-based test.
