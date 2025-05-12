@@ -1,0 +1,61 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: system-ui, Arial, Helvetica, sans-serif;
+  color: white;
+  background: #404040;
+  user-select: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+header, footer {
+  padding: 10px;
+  flex: 0 0 auto;
+}
+
+main {
+  flex: 1 1 auto;
+  background: #000000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+main img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+
+#bmp {
+  display: block;
+  position: relative;
+}
+
+.check-button {
+  position: absolute;
+  pointer-events: auto;
+  border: 0px solid #005a9c;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#topLeftBtn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  padding: 4px 8px;
+  font-size: 14px;
+  background-color: rgb(51, 51, 51); /* equivalent to 0.2 * 255 */
+  color: white;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+}

@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Center of Cancellation</title>
+    <link rel="stylesheet" href="cancel.css" />
+  </head>
+  <body>
+    <header id="mainHeader">
+      <select id="bmpSelect">
+        <option>Albert</option>
+        <option>Bells</option>
+        <option selected>Letter</option>
+        <option>Mesulam</option>
+        <option>Ota_Circle_C</option>
+        <option>Ota_Circle_O</option>
+        <option>Ota_CircleFlip_C</option>
+        <option>Ota_CircleFlip_O</option>
+        <option>Ota_Triangle_C</option>
+        <option>Ota_Triangle_O</option>
+        <option>Hillis_Small_C</option>
+        <option>Hillis_Small_O</option>
+        <option>Hillis_Large_C</option>
+        <option>Hillis_Large_O</option>
+        <option>Invisible</option>
+      </select>
+      <select id="modeSelect">
+        <option>Mode: Test</option>
+        <option selected>Mode: Describe</option>
+        <option>Mode: Score</option>
+        <option>Mode: Score - Uncheck All</option>
+        <option>Mode: Score - Check All</option>
+      </select>
+      <button id="openBtn">Open</button>
+      <button id="saveBtn">Save</button>
+      <button id="aboutBtn">About</button>
+    </header>
+      <main id="canvas-container">
+        <button id="topLeftBtn">☰</button>
+        <img id="bmp" src="./alberts.png" alt="image" />
+      </main>
+    <footer id="statusText">&nbsp;</footer>
+    <script type="module" async>
+      let checkTimestamps = []
+      let timeStart = Date.now()
+      let checkIndices = []
+      let iniData = {}
+      let isTestMode = false
+      let isDescribeMode = true
+      const defaultButtonSizeRatio = 0.03
+      const defaultButtonClickTolerance = 2
+      const defaultAlpha = 0.7
+      let alpha = defaultAlpha
+      let buttonSizeRatio = defaultButtonSizeRatio
+      let buttonClickSizeRatio = buttonSizeRatio * defaultButtonClickTolerance
+      const buttons = [] // global array of buttons
+      async function setAll(isChecked = false) {
+        if (!iniData.Check) return
+        for (const point of Object.values(iniData.Check)) {
+          point.checked = isChecked
+        }
+        drawButtonsFromCheckData()
+        describeCheckStats()
+      }
+      saveBtn.onclick = async function () {
+        if (!iniData || !iniData.Check) return
+        const selectedName = document.getElementById('bmpSelect').value
+        const filename = prompt('Enter filename (without extension):', selectedName + '_')
+        if (!filename) return // User cancelled
+        const lines = []
+        for (const section of Object.keys(iniData)) {
+          if (['minX', 'maxX', 'minY', 'maxY'].includes(section)) continue
+          const sectionData = iniData[section]
+          if (typeof sectionData !== 'object') continue
+          lines.push(`[${section}]`)
+          for (const [key, value] of Object.entries(sectionData)) {
+            if (section === 'Check') {
+              let line = `${key}=${value.x}|${value.y}|${value.checked ? 1 : 0}`
+              if (value.targetType !== undefined) {
+                line += `|${value.targetType}`
+              }
+              lines.push(line)
+            } else {
+              lines.push(`${key}=${value}`)
+            }
+          }
+          lines.push('')
+        }
+        // Save [Times] if available
+        if (
+          Array.isArray(checkTimestamps) &&
+          Array.isArray(checkIndices) &&
+          checkTimestamps.length > 0 &&
+          checkTimestamps.length === checkIndices.length
+        ) {
+          lines.push('[Times]')
+          for (let i = 0; i < checkIndices.length; i++) {
+            lines.push(`Point${checkIndices[i]}=${checkTimestamps[i]}`)
+          }
+          lines.push('')
+        }
+        const iniText = lines.join('\n')
+        const blob = new Blob([iniText], { type: 'text/plain' })
+      
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = `${filename}.ini`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+      }
+      function describeCheckStats() {
+        if (!iniData.Check || iniData.minX === undefined || iniData.maxX === undefined) return
+        const rangeX = iniData.maxX - iniData.minX
+        const rangeY = iniData.maxY - iniData.minY
+        if (rangeX === 0 || rangeY === 0) return 'Invalid data range'
+        let nLeftChecked = 0, nLeftTotal = 0
+        let nRightChecked = 0, nRightTotal = 0
+        let sumNormX = 0, sumNormY = 0
+        let nChecked = 0
+        const midX = (iniData.minX + iniData.maxX) / 2
+        for (const point of Object.values(iniData.Check)) {
+          const isLeft = point.x < midX
+          if (isLeft) nLeftTotal++
+          else nRightTotal++
+      
+          if (point.checked) {
+            const normX = ((point.x - iniData.minX) / rangeX) * 2 - 1 // [-1, 1]
+            const normY = ((point.y - iniData.minY) / rangeY) * 2 - 1
+            sumNormX += normX
+            sumNormY += normY
+            nChecked++
+      
+            if (isLeft) nLeftChecked++
+            else nRightChecked++
+          }
+        }
+        let CoCx = 'n/a', CoCy = 'n/a'
+        if (nChecked > 0) {
+          CoCx = (sumNormX / nChecked).toFixed(2)
+          CoCy = -(sumNormY / nChecked).toFixed(2)
+        }
+        const str = `Total ${nLeftChecked + nRightChecked}/${nLeftTotal + nRightTotal}=${Math.round(100*(nLeftChecked + nRightChecked)/(nLeftTotal + nRightTotal))}%  ` +
+                    `Left ${nLeftChecked}/${nLeftTotal}=${Math.round(100*nLeftChecked/nLeftTotal)}%  ` +
+                    `Right ${nRightChecked}/${nRightTotal}=${Math.round(100*nRightChecked/nRightTotal)}%  ` +
+                    `CoCx/y ${CoCx}/${CoCy}`
+        statusText.textContent = str
+        // console.log(str)
+        
+      }
+      function drawButtonsFromCheckData() {
+        for (const btn of buttons) btn.remove()
+        statusText.style.display = isTestMode ? 'none' : 'block' 
+        mainHeader.style.display = isTestMode ? 'none' : 'block' 
+        topLeftBtn.style.display = isTestMode ? 'block' : 'none' 
+        buttons.length = 0
+      
+        if (!iniData.Check) return
+        const container = document.getElementById('canvas-container')
+        const rect = bmp.getBoundingClientRect()
+        const scaleX = rect.width / bmp.naturalWidth
+        const scaleY = rect.height / bmp.naturalHeight
+        const scale = Math.min(scaleX, scaleY)
+      
+        const offsetX = rect.left
+        const offsetY = rect.top
+      
+        const buttonSize = bmp.naturalWidth > bmp.naturalHeight
+          ? rect.height * buttonSizeRatio
+          : rect.width * buttonSizeRatio
+      
+        for (const [key, point] of Object.entries(iniData.Check)) {
+          if (
+            typeof iniData.BOOL?.MarkDefectMode === 'boolean' &&
+            typeof point.targetType === 'number'
+          ) { // Ota task: mark defect of mark intact
+            console.log(iniData.BOOL?.MarkDefectMode)
+            if (
+              (!iniData.BOOL.MarkDefectMode && point.targetType !== 1) ||
+              (iniData.BOOL.MarkDefectMode && point.targetType === 1)
+            ) {
+              continue
+            }
+          }
+          const btn = document.createElement('button')
+          btn.className = 'check-button'
+          btn.textContent = '' // key
+      
+          btn.style.position = 'absolute'
+          btn.style.width = `${buttonSize}px`
+          btn.style.height = `${buttonSize}px`
+          btn.setAttribute('data-key', key)
+          const x = rect.left + point.x * scaleX - buttonSize / 2
+          const y = rect.top + point.y * scaleY - buttonSize / 2
+      
+          btn.style.left = `${x}px`
+          btn.style.top = `${y}px`
+          
+          if (!isTestMode && !isDescribeMode) {
+            btn.style.backgroundColor = point.checked
+              ? 'rgba(0, 200, 0, 0.9)'   // green, mostly opaque
+              : 'rgba(200, 0, 0, 0.2)'  // red, mostly transparent
+          } else {
+            btn.style.backgroundColor = point.checked
+              ? `rgba(0, 0, 208, ${alpha}`   // blue, mostly opaque
+              : 'rgba(200, 0, 0, 0.0)'  // inivisible
+
+          }
+          btn.onclick = () => {
+            if (isTestMode) {
+              // TODO in test mode we do not toggle checks, as this might reflect a Perseveration
+              iniData.Check[key].checked = true
+              // save order and time of click
+              const match = key.match(/^Point(\d+)$/)
+              const index = match ? parseInt(match[1], 10) : undefined
+              checkIndices.push(index)
+              if (checkTimestamps.length < 1)
+                timeStart = Date.now()
+              checkTimestamps.push(Date.now() - timeStart)
+            } else {
+              iniData.Check[key].checked = !iniData.Check[key].checked
+            }
+            drawButtonsFromCheckData()
+            describeCheckStats()
+          }
+      
+          document.body.appendChild(btn)
+          buttons.push(btn)
+        }
+      }
+      
+      // Redraw buttons on window resize
+      window.addEventListener('resize', () => {
+        if (Object.keys(iniData).length > 0) drawButtonsFromCheckData()
+      })
+
+      function parseIni(text) {
+        const result = {}
+        let section = null
+      
+        for (const line of text.split(/\r?\n/)) {
+          const trimmed = line.trim()
+          if (!trimmed || trimmed.startsWith(';')) continue
+      
+          if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+            section = trimmed.slice(1, -1)
+            result[section] = {}
+          } else if (section) {
+            const [key, ...rest] = trimmed.split('=')
+            const value = rest.join('=').trim()
+      
+            if (section === 'BOOL') {
+              result[section][key.trim()] = value === '1'
+            } else if (section === 'INT') {
+              result[section][key.trim()] = parseInt(value, 10)
+            } else if (section === 'Check' && key.trim().startsWith('Point')) {
+              const parts = value.split('|').map(Number)
+              const point = {
+                x: parts[0],
+                y: parts[1],
+                visible: !!parts[2]
+              }
+              if (parts.length > 3) {
+                point.targetType = parts[3]
+              }
+              result[section][key.trim()] = point
+            } else if (section === 'FLOAT') {
+              result[section][key.trim()] = parseFloat(value)
+            } else {
+              result[section][key.trim()] = value
+            }
+          }
+        }
+        if (result.Check) {
+          const xs = Object.values(result.Check).map(p => p.x)
+          const ys = Object.values(result.Check).map(p => p.y)
+          result.minX = Math.min(...xs)
+          result.maxX = Math.max(...xs)
+          result.minY = Math.min(...ys)
+          result.maxY = Math.max(...ys)
+        }
+        return result
+      }
+      async function loadIni (iniText) {
+        iniData = parseIni(iniText)
+        const imageName = iniData?.STR?.ImageName
+        if (!imageName) {
+          throw new Error('Missing STR.ImageName in INI file')
+        }
+        // Wait for image to fully load before drawing buttons
+        await new Promise((resolve, reject) => {
+          bmp.onload = () => resolve()
+          bmp.onerror = () => reject(new Error(`Failed to load image ${imageName}`))
+          bmp.src = `./${imageName}`
+        })
+        buttonSizeRatio = iniData?.FLOAT?.ButtonSizeRatio ?? defaultButtonSizeRatio
+        buttonClickSizeRatio = (iniData?.FLOAT?.ButtonClickSizeRatio ?? (buttonSizeRatio * defaultButtonClickTolerance))
+        alpha = iniData?.FLOAT?.Alpha ?? defaultAlpha
+        drawButtonsFromCheckData()
+        describeCheckStats()
+      }
+      
+      modeSelect.onchange  = async function () {
+        isTestMode = modeSelect.selectedIndex === 0
+        isDescribeMode = modeSelect.selectedIndex === 1
+        if (isTestMode) { //test
+          setAll(false)
+          checkTimestamps = []
+          checkIndices = []
+          if (alpha <= 0.0) {
+            alert(`Note: marking is invisible, you will not see selected items.`)
+          }
+        }
+        if (modeSelect.selectedIndex == 3) { //uncheck all, then score
+          modeSelect.selectedIndex = 2
+          setAll(false)
+        }
+        if (modeSelect.selectedIndex == 4) { // check all, then score
+          modeSelect.selectedIndex = 2
+          setAll(true)
+        }
+        drawButtonsFromCheckData()
+      }
+      topLeftBtn.onclick = async function () {
+        modeSelect.selectedIndex = modeSelect.selectedIndex === 0 ? 1 : 0
+        await modeSelect.onchange()
+        if (
+            Array.isArray(checkTimestamps) &&
+            Array.isArray(checkIndices) &&
+            checkTimestamps.length > 0 &&
+            checkTimestamps.length === checkIndices.length
+          ) {
+            saveBtn.onclick()
+          }
+      } 
+      bmpSelect.onchange = async function () {
+        const selected = bmpSelect.value
+        try {
+          const iniText = await fetch(`./${selected}.ini`).then(r => {
+            if (!r.ok) throw new Error(`HTTP error ${r.status}`)
+            return r.text()
+          })
+          await loadIni(iniText)
+      
+        } catch (err) {
+          console.error(`Failed to load INI for ${selected}:`, err)
+          statusText.textContent = `Error: ${err.message}`
+        }
+      }
+      async function handleFile(file) {
+        if (!file.name.endsWith('.ini')) {
+          statusText.textContent = 'Please drop a valid .ini file'
+          return
+        }
+        try {
+          const iniText = await file.text()
+          await loadIni(iniText)
+        } catch (err) {
+          console.error('Failed to load INI file:', err)
+          statusText.textContent = `Error: ${err.message}`
+        }
+      }
+      openBtn.onclick = () => {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = '.ini'
+        input.onchange = () => {
+          if (input.files.length > 0) handleFile(input.files[0])
+        }
+        input.click()
+      }
+      // Enable drag-and-drop anywhere on the page
+      document.body.addEventListener('dragover', e => e.preventDefault())
+      document.body.addEventListener('drop', async e => {
+        e.preventDefault()
+        const file = e.dataTransfer?.files?.[0]
+        if (file) handleFile(file)
+      })
+      aboutBtn.onclick = async function () {
+        alert(`Rorden & Karnath (2010) A simple measure of neglect severity. PMID: 20433859`)
+      }
+      bmp.addEventListener('mousedown', (e) => {
+        if (!iniData.Check) return
+        const rect = bmp.getBoundingClientRect()
+        const scaleX = bmp.naturalWidth / rect.width
+        const scaleY = bmp.naturalHeight / rect.height
+        const x = (e.clientX - rect.left) * scaleX
+        const y = (e.clientY - rect.top) * scaleY
+        // Convert to image coordinates
+        let nearestKey = null
+        let nearestDist = Infinity
+        for (const [key, point] of Object.entries(iniData.Check)) {
+          const dx = x - point.x
+          const dy = y - point.y
+          const dist = Math.hypot(dx, dy)
+          if (dist < nearestDist) {
+            nearestDist = dist
+            nearestKey = key
+          }
+        }
+        if (nearestKey) {
+          const tolerance = buttonClickSizeRatio * Math.min(bmp.naturalWidth, bmp.naturalHeight)
+          if (nearestDist <= tolerance) {
+            const btn = buttons.find(b => b.getAttribute('data-key') === nearestKey)
+            if (btn) btn.click()
+          }
+        }
+      })
+      await bmpSelect.onchange()
+    </script>
+  </body>
+</html>
